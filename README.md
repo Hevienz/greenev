@@ -13,6 +13,7 @@ Sample:
 ---
 示例：
 
+```python
 from greenev import Server
 import greenlet
 
@@ -25,3 +26,4 @@ class MyServer(Server):
 if __name__ == "__main__":
     ser=MyServer(8080)
     ser.poll()
+```
