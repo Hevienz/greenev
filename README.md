@@ -25,5 +25,5 @@ class MyServer(Server):
 
 if __name__ == "__main__":
     ser=MyServer(8080)
-    ser.poll()
+    ser.poll(timeout=1)
 ```
