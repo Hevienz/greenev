@@ -10,4 +10,4 @@ class MyServer(Server):
 
 if __name__ == "__main__":
     ser=MyServer(8080)
-    ser.poll(timeout=0.0001)
+    ser.poll(timeout=1)
