@@ -14,4 +14,4 @@ if __name__ == "__main__":
             return "My code here.\n"
 
     ser=MyServer(8080)
-    ser.poll()
+    ser.poll(timeout=10)

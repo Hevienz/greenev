@@ -75,7 +75,7 @@ class EpollServer(object):
                         except socket.error:
                             pass
                         if len(responses[fileno]) == 0:
-                            if (fileno not in run_tasks) or run_tasks[fileno].dead:
+                            if fileno not in run_tasks or run_tasks[fileno].dead:
                                 try:
                                     del run_tasks[fileno]
                                     del indate[fileno]

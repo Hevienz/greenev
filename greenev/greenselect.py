@@ -1,6 +1,7 @@
 import select
 import socket
 import greenlet
+import time
 
 class SelectServer(object):
     def __init__(self, port):
@@ -12,12 +13,12 @@ class SelectServer(object):
 
     def processRequest(self, request):
         g=greenlet.getcurrent()
-        g.parent.switch("ds\n")
-        g.parent.switch("zzz\n")
-        return "i love you\n"
+        g.parent.switch("Warning: ")
+        return "Replace processRequest function in your code.\n"
 
-    def poll(self):
+    def poll(self, timeout=10):
         run_tasks = {}
+        indate = {}
 
         inputs = [self.serversocket,]
         outputs = []
@@ -31,6 +32,12 @@ class SelectServer(object):
             for (fileno, task) in run_tasks.items():
                 res = task.switch(requests[fileno])
                 responses[fileno] += res
+
+            for (fileno, _time) in indate.items():
+                if _time < time.time():
+                    del run_tasks[fileno]
+                    del indate[fileno]
+                    responses[fileno] = "Timeout"
 
             readable , writable , exceptional = select.select(inputs, outputs, inputs, 1)
 
@@ -52,6 +59,10 @@ class SelectServer(object):
                             requests[s.fileno()] += s.recv(1024)
                         except socket.error as e:
                             run_tasks[s.fileno()]=greenlet.greenlet(self.processRequest)
+                            if timeout >= 0:
+                                indate[s.fileno()] = time.time() + timeout
+                            else:
+                                pass
                             inputs.remove(s)
                             outputs.append(s)
                             break
@@ -63,8 +74,12 @@ class SelectServer(object):
                 except socket.error:
                     pass
                 if len(responses[s.fileno()]) == 0:
-                    if run_tasks[s.fileno()].dead:
-                        del run_tasks[s.fileno()]
+                    if fileno not in run_tasks or run_tasks[s.fileno()].dead:
+                        try:
+                            del run_tasks[s.fileno()]
+                            del indate[s.fileno()]
+                        except:
+                            pass
                         outputs.remove(s)
                         s.shutdown(socket.SHUT_RDWR)
                     else:
