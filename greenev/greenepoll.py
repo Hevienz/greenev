@@ -1,6 +1,7 @@
 import socket
 import select
 import greenlet
+import time
 
 class EpollServer(object):
     def __init__(self, port):
@@ -15,12 +16,13 @@ class EpollServer(object):
         g.parent.switch("Warning: ")
         return "Replace processRequest function in your code.\n"
 
-    def poll(self):
+    def poll(self, timeout=10):
         epoll = select.epoll()
         epoll.register(self.serversocket.fileno(), select.EPOLLIN | select.EPOLLET)
 
         try:
             run_tasks={}
+            indate = {}
 
             connections = {}
             requests = {}
@@ -29,8 +31,14 @@ class EpollServer(object):
             while True:
 
                 for (fileno, task) in run_tasks.items():
-                     res = task.switch(requests[fileno])
-                     responses[fileno] += res
+                    res = task.switch(requests[fileno])
+                    responses[fileno] += res
+
+                for (fileno, _time) in indate.items():
+                    if _time < time.time():
+                        del run_tasks[fileno]
+                        del indate[fileno]
+                        responses[fileno] = "Timeout"
 
                 events = epoll.poll(1)
                 #print events
@@ -39,6 +47,7 @@ class EpollServer(object):
                         try:
                             while True:
                                 connection, address = self.serversocket.accept()
+                                #connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
                                 connection.setblocking(0)
                                 epoll.register(connection.fileno(), select.EPOLLIN | select.EPOLLET)
                                 connections[connection.fileno()] = connection
@@ -49,11 +58,15 @@ class EpollServer(object):
                     elif event & select.EPOLLIN:
                         while True:
                             try:
-                                 requests[fileno] += connections[fileno].recv(1024)
+                                requests[fileno] += connections[fileno].recv(1024)
                             except socket.error as e:
-                                 run_tasks[fileno]=greenlet.greenlet(self.processRequest)
-                                 epoll.modify(fileno, select.EPOLLOUT | select.EPOLLET)
-                                 break
+                                run_tasks[fileno]=greenlet.greenlet(self.processRequest)
+                                if timeout >= 0:
+                                    indate[fileno] = time.time() + timeout
+                                else:
+                                    pass
+                                epoll.modify(fileno, select.EPOLLOUT | select.EPOLLET)
+                                break
                     elif event & select.EPOLLOUT:
                         try:
                             while len(responses[fileno]) > 0:
@@ -62,8 +75,12 @@ class EpollServer(object):
                         except socket.error:
                             pass
                         if len(responses[fileno]) == 0:
-                            if run_tasks[fileno].dead:
-                                del run_tasks[fileno]
+                            if (fileno not in run_tasks) or run_tasks[fileno].dead:
+                                try:
+                                    del run_tasks[fileno]
+                                    del indate[fileno]
+                                except:
+                                    pass
                                 epoll.modify(fileno, select.EPOLLET)
                                 connections[fileno].shutdown(socket.SHUT_RDWR)
                             else:
