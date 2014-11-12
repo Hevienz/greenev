@@ -5,11 +5,11 @@ import time
 
 class SelectServer(object):
     def __init__(self, port):
-        self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.serversocket.bind(('0.0.0.0', port))
-        self.serversocket.listen(5000)
-        self.serversocket.setblocking(0)
+        self.sersock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sersock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sersock.bind(('0.0.0.0', port))
+        self.sersock.listen(5000)
+        self.sersock.setblocking(0)
 
     def processRequest(self, request):
         g=greenlet.getcurrent()
@@ -17,76 +17,70 @@ class SelectServer(object):
         return "Replace processRequest function in your code.\n"
 
     def poll(self, timeout=10):
+        conns = {}
         run_tasks = {}
-        indate = {}
 
-        inputs = [self.serversocket,]
-        outputs = []
-
-        connections = {}
-        requests = {}
-        responses = {}
+        insocks = [self.sersock,]
+        outsocks = []
 
         while True:
-
-            for (fileno, task) in run_tasks.items():
-                res = task.switch(requests[fileno])
-                responses[fileno] += res
-
-            for (fileno, _time) in indate.items():
-                if _time < time.time():
+            for (fileno, task_t) in run_tasks.items():
+                res = task_t["task"].switch(conns[fileno]["req"])
+                if type(res) is str:
+                    conns[fileno]["resp"] += res
+                if task_t["intime"] and task_t["intime"] < time.time():
+                    conns[fileno]["resp"] = "Timeout"
                     del run_tasks[fileno]
-                    del indate[fileno]
-                    responses[fileno] = "Timeout"
 
-            readable , writable , exceptional = select.select(inputs, outputs, inputs, 1)
-
+            readable , writable , exceptional = select.select(insocks, outsocks, insocks, 1)
             for s in readable :
-                if s is self.serversocket:
+                if s is self.sersock:
                     try:
                         while True:
-                            connection, client_address = s.accept()
-                            connection.setblocking(0)
-                            inputs.append(connection)
-                            connections[connection.fileno()] = connection
-                            requests[connection.fileno()] = b""
-                            responses[connection.fileno()] = b""
+                            clisock, cliaddr = s.accept()
+                            clisock.setblocking(0)
+                            insocks.append(clisock)
+                            conns[clisock.fileno()] = {}
+                            conns[clisock.fileno()]["sock"] = clisock
+                            conns[clisock.fileno()]["req"] = b""
+                            conns[clisock.fileno()]["resp"] = b""
                     except socket.error:
                         pass
                 else:
                     while True:
                         try:
-                            requests[s.fileno()] += s.recv(1024)
+                            conns[s.fileno()]["req"] += s.recv(1024)
                         except socket.error as e:
-                            run_tasks[s.fileno()]=greenlet.greenlet(self.processRequest)
+                            task_t = {"task": greenlet.greenlet(self.processRequest),
+                                      "intime": None,}
                             if timeout >= 0:
-                                indate[s.fileno()] = time.time() + timeout
+                                task_t["intime"] = time.time() + timeout
                             else:
                                 pass
-                            inputs.remove(s)
-                            outputs.append(s)
+                            run_tasks[s.fileno()] = task_t
+                            insocks.remove(s)
+                            outsocks.append(s)
                             break
             for s in writable:
                 try:
-                    while len(responses[s.fileno()]) > 0:
-                        byteswritten = s.send(responses[s.fileno()])
-                        responses[s.fileno()] = responses[s.fileno()][byteswritten:]
+                    while len(conns[s.fileno()]["resp"]) > 0:
+                        nsend = s.send(conns[s.fileno()]["resp"])
+                        conns[s.fileno()]["resp"] = conns[s.fileno()]["resp"][nsend:]
                 except socket.error:
                     pass
-                if len(responses[s.fileno()]) == 0:
-                    if fileno not in run_tasks or run_tasks[s.fileno()].dead:
-                        try:
-                            del run_tasks[s.fileno()]
-                            del indate[s.fileno()]
-                        except:
-                            pass
-                        outputs.remove(s)
+                if len(conns[s.fileno()]["resp"]) == 0:
+                    if fileno not in run_tasks:
+                        outsocks.remove(s)
+                        s.shutdown(socket.SHUT_RDWR)
+                    elif run_tasks[s.fileno()]["task"].dead:
+                        del run_tasks[s.fileno()]
+                        outsocks.remove(s)
                         s.shutdown(socket.SHUT_RDWR)
                     else:
                         pass
             for s in exceptional:
-                if s in inputs:
-                    inputs.remove(s)
-                if s in outputs:
-                    outputs.remove(s)
+                if s in insocks:
+                    insocks.remove(s)
+                if s in outsocks:
+                    outsocks.remove(s)
                 s.close()
