@@ -9,21 +9,3 @@ greenev is a Python networking library that bseed on greenlet's coroutine, it is
 
 Inspired by gevent, openresty, alilua, skynet, luactor, levent, thanks for all of them.
 
-Sample:
----
-示例：
-
-```python
-from greenev import Server
-import greenlet
-
-class MyServer(Server):
-    def processRequest(self, request):
-        g=greenlet.getcurrent()
-        g.parent.switch("Info: ")
-        return "My code here.\n"
-
-if __name__ == "__main__":
-    ser=MyServer(8080)
-    ser.poll(timeout=1)
-```
