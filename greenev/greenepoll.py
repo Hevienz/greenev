@@ -29,7 +29,7 @@ class EpollServer(object):
                     res = task_t["task"].switch(conns[fileno]["req"])
                     if type(res) is str:
                         conns[fileno]["resp"] += res
-                    if task_t["intime"] < time.time():
+                    if task_t["intime"] and task_t["intime"] < time.time():
                         conns[fileno]["resp"] = "Timeout"
                         del run_tasks[fileno]
 
