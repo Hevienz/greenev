@@ -11,7 +11,7 @@ class SelectServer(object):
         self.sersock.listen(5000)
         self.sersock.setblocking(0)
 
-    def processRequest(self, request):
+    def processRequest(self, request, fileno):
         g=greenlet.getcurrent()
         g.parent.switch("Warning: ")
         return "Replace processRequest function in your code.\n"
@@ -25,14 +25,20 @@ class SelectServer(object):
 
         while True:
             for (fileno, task_t) in run_tasks.items():
-                res = task_t["task"].switch(conns[fileno]["req"])
+                res = task_t["task"].switch(conns[fileno]["req"], fileno)
                 if type(res) is str:
                     conns[fileno]["resp"] += res
-                if task_t["intime"] and task_t["intime"] < time.time():
+                if task_t["timeout"] and task_t["timeout"] < time.time():
                     conns[fileno]["resp"] = "Timeout"
                     del run_tasks[fileno]
 
             readable , writable , exceptional = select.select(insocks, outsocks, insocks, 1)
+            for s in exceptional:
+                if s in insocks:
+                    insocks.remove(s)
+                if s in outsocks:
+                    outsocks.remove(s)
+                s.close()
             for s in readable :
                 if s is self.sersock:
                     try:
@@ -52,9 +58,9 @@ class SelectServer(object):
                             conns[s.fileno()]["req"] += s.recv(1024)
                         except socket.error as e:
                             task_t = {"task": greenlet.greenlet(self.processRequest),
-                                      "intime": None,}
+                                      "timeout": None,}
                             if timeout >= 0:
-                                task_t["intime"] = time.time() + timeout
+                                task_t["timeout"] = time.time() + timeout
                             else:
                                 pass
                             run_tasks[s.fileno()] = task_t
@@ -78,9 +84,3 @@ class SelectServer(object):
                         s.shutdown(socket.SHUT_RDWR)
                     else:
                         pass
-            for s in exceptional:
-                if s in insocks:
-                    insocks.remove(s)
-                if s in outsocks:
-                    outsocks.remove(s)
-                s.close()

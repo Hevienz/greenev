@@ -2,6 +2,7 @@ import socket
 import select
 import greenlet
 import time
+import errno
 
 class EpollServer(object):
     def __init__(self, port):
@@ -11,57 +12,72 @@ class EpollServer(object):
         self.sersock.listen(5000)
         self.sersock.setblocking(0)
 
-    def processRequest(self, request):
+    def processRequest(self, request, fileno):
         g=greenlet.getcurrent()
         g.parent.switch("Warning: ")
         return "Replace processRequest function in your code.\n"
 
+    def sleep(self, seconds, fileno, coroutine):
+        self.run_tasks[fileno]["delay"] = seconds + time.time()
+        coroutine.parent.switch()
+
     def poll(self, timeout=10):
         epoll = select.epoll()
-        epoll.register(self.sersock.fileno(), select.EPOLLIN | select.EPOLLET)
+        epoll.register(self.sersock.fileno(), select.EPOLLIN |select.EPOLLHUP | select.EPOLLERR | select.EPOLLET)
 
         try:
             conns = {}
-            run_tasks = {}
+            self.run_tasks = {}
 
             while True:
-                for (fileno, task_t) in run_tasks.items():
-                    res = task_t["task"].switch(conns[fileno]["req"])
-                    if type(res) is str:
-                        conns[fileno]["resp"] += res
-                    if task_t["intime"] and task_t["intime"] < time.time():
+                for (fileno, task_t) in self.run_tasks.items():
+                    if time.time() > self.run_tasks[fileno]["delay"]:
+                        res = task_t["task"].switch(conns[fileno]["req"], fileno)
+                        if type(res) is str:
+                            conns[fileno]["resp"] += res
+                    if task_t["timeout"] and task_t["timeout"] < time.time():
                         conns[fileno]["resp"] = "Timeout"
-                        del run_tasks[fileno]
+                        del self.run_tasks[fileno]
 
                 events = epoll.poll(1)
-                #print events
                 for fileno, event in events:
                     if fileno == self.sersock.fileno():
                         try:
                             while True:
                                 clisock, cliaddr = self.sersock.accept()
-                                #connection.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
                                 clisock.setblocking(0)
                                 epoll.register(clisock.fileno(), select.EPOLLIN | select.EPOLLET)
                                 conns[clisock.fileno()] = {}
                                 conns[clisock.fileno()]["sock"] = clisock
                                 conns[clisock.fileno()]["req"] = b''
                                 conns[clisock.fileno()]["resp"] = b''
-                        except socket.error:
+                                epoll.modify(fileno, select.EPOLLIN | select.EPOLLET)
+                        except socket.error as e:
+                            if e.errno == errno.EAGAIN: pass
+                            else: print e
+                    elif event & (select.EPOLLHUP | select.EPOLLERR):
+                        epoll.unregister(fileno)
+                        conns[fileno]["sock"].close()
+                        del conns[fileno]
+                        try:
+                            del self.run_tasks[fileno]
+                        except:
                             pass
                     elif event & select.EPOLLIN:
                         while True:
                             try:
-                                conns[fileno]["req"] += conns[fileno]["sock"].recv(1024)
+                                buf = conns[fileno]["sock"].recv(4096)
+                                conns[fileno]["req"] += buf
+                                if len(buf) < 4096: raise socket.error("recv < 4096")
                             except socket.error as e:
                                 task_t = {"task": greenlet.greenlet(self.processRequest),
-                                          "intime": None,}
+                                          "timeout": None,
+                                          "delay": None,}
                                 if timeout >= 0:
-                                    task_t["intime"] = time.time() + timeout
+                                    task_t["timeout"] = time.time() + timeout
                                 else:
                                     pass
-                                #conns[fileno]["task_status"] = "suspend"
-                                run_tasks[fileno] = task_t
+                                self.run_tasks[fileno] = task_t
                                 epoll.modify(fileno, select.EPOLLOUT | select.EPOLLET)
                                 break
                     elif event & select.EPOLLOUT:
@@ -72,19 +88,16 @@ class EpollServer(object):
                         except socket.error:
                             pass
                         if len(conns[fileno]["resp"]) == 0:
-                            if fileno not in run_tasks:
-                                epoll.modify(fileno, select.EPOLLET)
-                                conns[fileno]["sock"].shutdown(socket.SHUT_RDWR)
-                            elif run_tasks[fileno]["task"].dead:
-                                del run_tasks[fileno]
-                                epoll.modify(fileno, select.EPOLLET)
-                                conns[fileno]["sock"].shutdown(socket.SHUT_RDWR)
+                            if fileno not in self.run_tasks:
+                                epoll.unregister(fileno)
+                                conns[fileno]["sock"].close()
+                            elif self.run_tasks[fileno]["task"].dead:
+                                del self.run_tasks[fileno]
+                                epoll.unregister(fileno)
+                                conns[fileno]["sock"].close()
                             else:
                                 epoll.modify(fileno, select.EPOLLOUT | select.EPOLLET)
-                    elif event & select.EPOLLHUP:
-                        epoll.unregister(fileno)
-                        conns[fileno]["sock"].close()
-                        del conns[fileno]
+
         finally:
             epoll.unregister(self.sersock.fileno())
             epoll.close()
