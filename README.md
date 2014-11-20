@@ -9,3 +9,11 @@ greenev is a Python networking library that bseed on greenlet's coroutine, it is
 
 Inspired by gevent, openresty, alilua, skynet, luactor, levent, thanks for all of them.
 
+测试前请修改如下系统参数：
+ubuntu:
+net.nf_conntrack_max = 655360
+net.netfilter.nf_conntrack_tcp_timeout_established = 1200
+
+centos:
+net.ipv4.netfilter.ip_conntrack_max = 655350
+net.ipv4.netfilter.ip_conntrack_tcp_timeout_established = 1200
