@@ -1,8 +1,8 @@
 from reactor import Reactor
-import time
 import greenlet
 import errno
 import socket
+from timer import Timer
 
 class Scheduler(Reactor):
     def __init__(self):
@@ -21,7 +21,7 @@ class Scheduler(Reactor):
                   "timeout": None,
                   "delay": None,}
         if timeout >= 0:
-            task_t["timeout"] = time.time() + timeout
+            task_t["timeout"] = Timer(timeout)
         else:
             pass
         self.run_tasks[fd] = task_t
@@ -30,24 +30,31 @@ class Scheduler(Reactor):
         if fd in self.conns: del self.conns[fd]
         if fd in self.run_tasks: del self.run_tasks[fd]
 
+    def sleep(self, seconds, fileno, coroutine):
+        self.run_tasks[fileno]["delay"] = Timer(seconds)
+        coroutine.parent.switch()
+
     def handler(self, request, fileno):
         g=greenlet.getcurrent()
         g.parent.switch("Warning: ")
         return "Replace processRequest function in your code.\n"
+
+    def _sched_coroutine(self):
+        for (fileno, task_t) in self.run_tasks.items():
+            if task_t["delay"] is None or task_t["delay"].canRun():
+                res = task_t["task"].switch(self.conns[fileno]["req"], fileno)
+                if type(res) is str:
+                    self.conns[fileno]["resp"] += res
+            if (not task_t["timeout"] is None) and task_t["timeout"].isTimeout():
+                self.conns[fileno]["resp"] = "Timeout"
+                del self.run_tasks[fileno]
 
     def sched(self, sersock, timeout=10):
         serfd = sersock.fileno()
         self.register(serfd, self.EV_IN)
 
         while True:
-            for (fileno, task_t) in self.run_tasks.items():
-                if time.time() > self.run_tasks[fileno]["delay"]:
-                    res = task_t["task"].switch(self.conns[fileno]["req"], fileno)
-                    if type(res) is str:
-                        self.conns[fileno]["resp"] += res
-                if task_t["timeout"] and task_t["timeout"] < time.time():
-                    self.conns[fileno]["resp"] = "Timeout"
-                    del self.run_tasks[fileno]
+            self._sched_coroutine()
 
             events = self.poll(1)
             for fileno, event in events:

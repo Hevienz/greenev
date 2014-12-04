@@ -10,9 +10,5 @@ class Server(Scheduler):
         self.sersock.listen(5000)
         self.sersock.setblocking(0)
 
-    def sleep(self, seconds, fileno, coroutine):
-        self.run_tasks[fileno]["delay"] = seconds + time.time()
-        coroutine.parent.switch()
-
-    def start(self):
-        self.sched(self.sersock)
+    def start(self, timeout=10):
+        self.sched(self.sersock, timeout)
