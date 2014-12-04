@@ -13,6 +13,6 @@ Inspired by gevent, openresty, alilua, skynet, luactor, levent, clowwindy/ssloop
 
 
 
-net.nf_conntrack_max = 655360
+net.nf_conntrack_max = 65000
 
 net.netfilter.nf_conntrack_tcp_timeout_established = 1200
