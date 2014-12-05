@@ -5,13 +5,9 @@ greenev是一个基于greenlet协程，事件驱动，非阻塞socket模型的Py
 
 greenev is a Python networking library that bseed on greenlet's coroutine, it is event driven and use non-blocking socket model. It makes writing synchronous code gain the advantage of asynchronous execution.
 
-本项目受到gevent, openresty, alilua, skynet, luactor, levent, clowwindy/ssloop的启发，在此表示感谢。
+本项目受到gevent, openresty, alilua, skynet, clowwindy/ssloop的启发，在此表示感谢。
 
-Inspired by gevent, openresty, alilua, skynet, luactor, levent, clowwindy/ssloop, thanks for all of them.
-
-* reactor模式采用基于epoll, kqueue, poll, select的IO复用机制
-* 基于底层的reactor完成上层greenlet协程的调度
-* 在CentOS6.5, Ubuntu12.04, FreeBSD10.1, Windows7上测试通过
+Inspired by gevent, openresty, alilua, skynet, clowwindy/ssloop, thanks for all of them.
 
 测试前请修改如下系统参数：
 
