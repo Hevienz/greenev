@@ -9,9 +9,11 @@ greenev is a Python networking library that bseed on greenlet's coroutine, it is
 
 Inspired by gevent, openresty, alilua, skynet, clowwindy/ssloop, thanks for all of them.
 
+* reactor模式采用基于epoll, kqueue, poll, select的IO复用机制
+* 基于底层的reactor完成上层greenlet协程的调度
+* 在CentOS6.5, Ubuntu12.04, FreeBSD10.1, Windows7上测试通过
+
 测试前请修改如下系统参数：
-
-
 
 net.nf_conntrack_max = 65000
 
