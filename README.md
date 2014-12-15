@@ -16,7 +16,7 @@ Inspired by gevent, openresty, alilua, skynet, clowwindy/ssloop, thanks for all 
 
 测试前请修改如下系统参数(CentOS)：
 
-`bash
+`
 net.ipv4.tcp_syncookies = 1 
 net.ipv4.tcp_tw_reuse = 1 
 net.ipv4.tcp_tw_recycle = 1 
