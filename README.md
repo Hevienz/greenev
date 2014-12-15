@@ -14,8 +14,16 @@ Inspired by gevent, openresty, alilua, skynet, clowwindy/ssloop, thanks for all 
 * 在CentOS6.5, Ubuntu12.04, FreeBSD10.1, Windows7上测试通过
 * 只需调用g.parent.switch挂起当前的协程，而无需管理其中的细节
 
-测试前请修改如下系统参数：
+测试前请修改如下系统参数(CentOS)：
 
-net.nf_conntrack_max = 65000
-
+net.ipv4.tcp_syncookies = 1 
+net.ipv4.tcp_tw_reuse = 1 
+net.ipv4.tcp_tw_recycle = 1 
+net.ipv4.tcp_fin_timeout = 30 
+net.ipv4.tcp_keepalive_time = 1200 
+net.ipv4.ip_local_port_range = 1024 65000 
+net.ipv4.tcp_max_syn_backlog = 8192 
+fs.file-max=65535 
+net.ipv4.tcp_max_tw_buckets = 20000 
+net.nf_conntrack_max = 65000 
 net.netfilter.nf_conntrack_tcp_timeout_established = 1200
