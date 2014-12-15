@@ -16,6 +16,7 @@ Inspired by gevent, openresty, alilua, skynet, clowwindy/ssloop, thanks for all 
 
 测试前请修改如下系统参数(CentOS)：
 
+`bash
 net.ipv4.tcp_syncookies = 1 
 net.ipv4.tcp_tw_reuse = 1 
 net.ipv4.tcp_tw_recycle = 1 
@@ -27,3 +28,4 @@ fs.file-max=65535
 net.ipv4.tcp_max_tw_buckets = 20000 
 net.nf_conntrack_max = 65000 
 net.netfilter.nf_conntrack_tcp_timeout_established = 1200
+`
