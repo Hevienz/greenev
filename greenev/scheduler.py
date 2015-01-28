@@ -30,6 +30,10 @@ class Scheduler(Reactor):
         if fd in self.conns: del self.conns[fd]
         if fd in self.run_tasks: del self.run_tasks[fd]
 
+    def _reset_all(self, fd):
+        self.conns[fd]['req'] = b''
+        del self.run_tasks[fd]        
+
     def sleep(self, seconds, fileno, coroutine):
         self.run_tasks[fileno]["delay"] = Timer(seconds)
         coroutine.parent.switch()
@@ -94,12 +98,14 @@ class Scheduler(Reactor):
                         pass
                     if len(self.conns[fileno]["resp"]) == 0:
                         if fileno not in self.run_tasks:
-                            self.unregister(fileno)
-                            self.conns[fileno]["sock"].close()
+                            #self.unregister(fileno)
+                            #self.conns[fileno]["sock"].close()
+                            self.modify(fileno, self.EV_IN)
                         elif self.run_tasks[fileno]["task"].dead:
-                            self.unregister(fileno)
-                            self.conns[fileno]["sock"].close()
-                            self._clear_all(fileno)
+                            #self.unregister(fileno)
+                            #self.conns[fileno]["sock"].close()
+                            self._reset_all(fileno)
+                            self.modify(fileno, self.EV_IN)
                         else:
                             self.modify(fileno, self.EV_OUT)
 
