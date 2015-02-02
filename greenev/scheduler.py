@@ -32,6 +32,7 @@ class Scheduler(Reactor):
 
     def _reset_all(self, fd):
         self.conns[fd]['req'] = b''
+        self.conns[fd]['resp'] = b''
         del self.run_tasks[fd]        
 
     def sleep(self, seconds, fileno, coroutine):
