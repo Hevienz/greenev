@@ -42,7 +42,7 @@ class Scheduler(Reactor):
     def handler(self, request, fileno):
         g=greenlet.getcurrent()
         g.parent.switch("Warning: ")
-        return "Replace processRequest function in your code.\n"
+        return "Replace handler function in your code.\n"
 
     def _sched_coroutine(self):
         for (fileno, task_t) in self.run_tasks.items():
