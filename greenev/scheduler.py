@@ -27,6 +27,8 @@ class Scheduler(Reactor):
         self.run_tasks[fd] = task_t
 
     def _clear_all(self, fd):
+        self.unregister(fd)
+        self.conns[fd]["sock"].close()
         if fd in self.conns: del self.conns[fd]
         if fd in self.run_tasks: del self.run_tasks[fd]
 
@@ -77,19 +79,30 @@ class Scheduler(Reactor):
                         else:
                             print e
                 elif event & self.EV_DISCONNECTED:
-                    self.unregister(fileno)
-                    self.conns[fileno]["sock"].close()
                     self._clear_all(fileno)
                 elif event & self.EV_IN:
                     while True:
                         try:
                             buf = self.conns[fileno]["sock"].recv(4096)
-                            self.conns[fileno]["req"] += buf
-                            if len(buf) < 4096: raise socket.error("recv < 4096")
+                            if len(buf) == 0:
+                                print "The other side closed."
+                                self._clear_all(fileno)
+                                break
+                            elif len(buf) < 4096:
+                                self.conns[fileno]["req"] += buf
+                                self._init_run_tasks(fileno, timeout)
+                                self.modify(fileno, self.EV_OUT)
+                                break
+                            elif len(buf) == 4096:
+                                self.conns[fileno]["req"] += buf
                         except socket.error as e:
-                            self._init_run_tasks(fileno, timeout)
-                            self.modify(fileno, self.EV_OUT)
-                            break
+                            if e.errno == errno.EAGAIN:
+                                self._init_run_tasks(fileno, timeout)
+                                self.modify(fileno, self.EV_OUT)
+                                break
+                            else:
+                                print e
+                                break
                 elif event & self.EV_OUT:
                     try:
                         while len(self.conns[fileno]["resp"]) > 0:
