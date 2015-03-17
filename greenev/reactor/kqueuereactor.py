@@ -22,7 +22,7 @@ class KqueueReactor(object):
         for e in events:
             self._poller.control([e], 0)
 
-    def _poll(self, timeout):
+    def poll(self, timeout):
         if timeout < 0:
             timeout = None  # kqueue behaviour
         events = self._poller.control(None, MAX_EVENTS, timeout)
@@ -35,14 +35,14 @@ class KqueueReactor(object):
                 results[fd] |= self.EV_OUT
         return results.iteritems()
 
-    def _add_fd(self, fd, mode):
+    def register(self, fd, mode):
         self._fds[fd] = mode
         self._control(fd, mode, select.KQ_EV_ADD)
 
-    def _remove_fd(self, fd):
+    def unregister(self, fd):
         self._control(fd, self._fds[fd], select.KQ_EV_DELETE)
         del self._fds[fd]
 
-    def _modify_fd(self, fd, mode):
-        self._remove_fd(fd)
-        self._add_fd(fd, mode)
+    def modify(self, fd, mode):
+        self.unregister(fd)
+        self.register(fd, mode)
