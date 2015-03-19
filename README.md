@@ -11,7 +11,7 @@ Inspired by gevent, openresty, alilua, skynet, clowwindy/ssloop, thanks for all 
 
 * reactor模式采用基于epoll, kqueue, poll, select的IO复用机制
 * 基于底层的reactor完成上层greenlet协程的调度
-* 在CentOS6.5, Ubuntu12.04, FreeBSD10.1, Windows7上测试通过
+* 在CentOS6.5, Ubuntu12.04, FreeBSD10.1, Windows7, OS X 10.10.2上测试通过
 * 只需调用g.parent.switch挂起当前的协程，而无需管理其中的细节
 
 测试前请修改如下系统参数(CentOS)：
