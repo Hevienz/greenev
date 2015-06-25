@@ -3,6 +3,8 @@ import greenlet
 import errno
 import socket
 from timer import Timer
+import logging
+
 
 class Scheduler(Reactor):
     def __init__(self):
@@ -19,7 +21,7 @@ class Scheduler(Reactor):
     def _init_run_tasks(self, fd, timeout):
         task_t = {"task": greenlet.greenlet(self.handler),
                   "timeout": None,
-                  "delay": None,}
+                  "delay": None, }
         if timeout >= 0:
             task_t["timeout"] = Timer(timeout)
         else:
@@ -35,14 +37,14 @@ class Scheduler(Reactor):
     def _reset_all(self, fd):
         self.conns[fd]['req'] = b''
         self.conns[fd]['resp'] = b''
-        del self.run_tasks[fd]        
+        del self.run_tasks[fd]
 
     def sleep(self, seconds, fileno, coroutine):
         self.run_tasks[fileno]["delay"] = Timer(seconds)
         coroutine.parent.switch()
 
     def handler(self, request, fileno):
-        g=greenlet.getcurrent()
+        g = greenlet.getcurrent()
         g.parent.switch("Warning: ")
         return "Replace handler function in your code.\n"
 
@@ -77,7 +79,7 @@ class Scheduler(Reactor):
                         if e.errno == errno.EAGAIN:
                             self.modify(serfd, self.EV_IN)
                         else:
-                            print e
+                            logging.exception(e)
                 elif event & self.EV_DISCONNECTED:
                     self._clear_all(fileno)
                 elif event & self.EV_IN:
@@ -85,7 +87,7 @@ class Scheduler(Reactor):
                         try:
                             buf = self.conns[fileno]["sock"].recv(4096)
                             if len(buf) == 0:
-                                print "The other side closed."
+                                logging.info("The other side closed.")
                                 self._clear_all(fileno)
                                 break
                             elif len(buf) < 4096:
@@ -101,7 +103,7 @@ class Scheduler(Reactor):
                                 self.modify(fileno, self.EV_OUT)
                                 break
                             else:
-                                print e
+                                logging.exception(e)
                                 break
                 elif event & self.EV_OUT:
                     try:
@@ -112,14 +114,13 @@ class Scheduler(Reactor):
                         pass
                     if len(self.conns[fileno]["resp"]) == 0:
                         if fileno not in self.run_tasks:
-                            #self.unregister(fileno)
-                            #self.conns[fileno]["sock"].close()
+                            # self.unregister(fileno)
+                            # self.conns[fileno]["sock"].close()
                             self.modify(fileno, self.EV_IN)
                         elif self.run_tasks[fileno]["task"].dead:
-                            #self.unregister(fileno)
-                            #self.conns[fileno]["sock"].close()
+                            # self.unregister(fileno)
+                            # self.conns[fileno]["sock"].close()
                             self._reset_all(fileno)
                             self.modify(fileno, self.EV_IN)
                         else:
                             self.modify(fileno, self.EV_OUT)
-

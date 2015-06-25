@@ -1,6 +1,7 @@
 #!/usr/bin/python
 from select import epoll, EPOLLHUP, EPOLLERR, EPOLLIN, EPOLLOUT, EPOLLET
 
+
 class EpollReactor(object):
     EV_DISCONNECTED = (EPOLLHUP | EPOLLERR)
     EV_IN = EPOLLIN | EPOLLET

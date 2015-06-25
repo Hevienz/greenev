@@ -3,6 +3,7 @@ from collections import defaultdict
 
 MAX_EVENTS = 1024
 
+
 class KqueueReactor(object):
     EV_NULL = 0x00
     EV_DISCONNECTED = 0x18

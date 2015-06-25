@@ -1,6 +1,7 @@
 from scheduler import Scheduler
 import socket
 
+
 class Server(Scheduler):
     def __init__(self, port):
         super(Server, self).__init__()

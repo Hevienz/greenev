@@ -1,6 +1,7 @@
 from select import select
 from collections import defaultdict
 
+
 class SelectReactor(object):
     EV_NULL = 0x00
     EV_DISCONNECTED = 0x18

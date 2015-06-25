@@ -1,6 +1,7 @@
 #!/usr/bin/python
 from select import poll, POLLHUP, POLLERR, POLLIN, POLLOUT
 
+
 class PollReactor(object):
     EV_DISCONNECTED = (POLLHUP | POLLERR)
     EV_IN = POLLIN
