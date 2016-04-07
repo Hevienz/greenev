@@ -1,8 +1,11 @@
-#!/usr/bin/python
+__all__ = ["EpollReactor"]
+
+
+from .abstractreactor import AbstractReactor
 from select import epoll, EPOLLHUP, EPOLLERR, EPOLLIN, EPOLLOUT, EPOLLET
 
 
-class EpollReactor(object):
+class EpollReactor(AbstractReactor):
     EV_DISCONNECTED = (EPOLLHUP | EPOLLERR)
     EV_IN = EPOLLIN | EPOLLET
     EV_OUT = EPOLLOUT | EPOLLET

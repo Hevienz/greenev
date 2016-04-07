@@ -1,4 +1,7 @@
-from scheduler import Scheduler
+__all__ = ["Server"]
+
+
+from .scheduler import Scheduler
 import socket
 
 

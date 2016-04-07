@@ -1,3 +1,6 @@
+__all__ = ["Timer"]
+
+
 import time
 
 

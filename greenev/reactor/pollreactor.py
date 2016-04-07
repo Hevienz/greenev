@@ -1,8 +1,11 @@
-#!/usr/bin/python
+__all__ = ["PollReactor"]
+
+
+from .abstractreactor import AbstractReactor
 from select import poll, POLLHUP, POLLERR, POLLIN, POLLOUT
 
 
-class PollReactor(object):
+class PollReactor(AbstractReactor):
     EV_DISCONNECTED = (POLLHUP | POLLERR)
     EV_IN = POLLIN
     EV_OUT = POLLOUT

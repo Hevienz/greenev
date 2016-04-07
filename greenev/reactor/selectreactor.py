@@ -1,8 +1,12 @@
+__all__ = ["SelectReactor"]
+
+
+from .abstractreactor import AbstractReactor
 from select import select
 from collections import defaultdict
 
 
-class SelectReactor(object):
+class SelectReactor(AbstractReactor):
     EV_NULL = 0x00
     EV_DISCONNECTED = 0x18
     EV_IN = 0x01
