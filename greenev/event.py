@@ -1,10 +1,6 @@
 __all__ = ["BaseEventLoop"]
 
 
-import logging
-import errno
-import socket
-import greenlet
 from .reactor import Reactor
 
 
