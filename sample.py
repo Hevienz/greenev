@@ -13,6 +13,7 @@ def handler(C):
         else:
             print("MSG from %s: %s" % (C.addr, data))
             C.write(b"REPLAY: " + data)
+            C.close()
         g.parent.switch()
 
 

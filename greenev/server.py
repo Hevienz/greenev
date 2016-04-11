@@ -4,8 +4,14 @@ __all__ = ["StreamServer", "NoDataException"]
 import socket
 import errno
 import logging
-import queue
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 from .event import BaseEventLoop
+
+if not hasattr(__builtins__, "BlockingIOError"):
+    BlockingIOError = socket.error
 
 
 BUFSIZE = 4096
