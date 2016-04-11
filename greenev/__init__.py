@@ -1,4 +1,4 @@
-__all__ = ["Server"]
+__all__ = ["coroutine"]
 
 
-from .server import Server
+from .coroutine import coroutine

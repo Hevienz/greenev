@@ -4,13 +4,13 @@ __all__ = ["Reactor"]
 import select
 
 
-if 'epoll' in select.__dict__:
+if hasattr(select, "epoll"):
     from .epollreactor import EpollReactor as Reactor
-elif 'kqueue' in select.__dict__:
+elif hasattr(select, "kqueue"):
     from .kqueuereactor import KqueueReactor as Reactor
-elif 'poll' in select.__dict__:
+elif hasattr(select, "poll"):
     from .pollreactor import PollReactor as Reactor
-elif 'select' in select.__dict__:
+elif hasattr(select, "select"):
     from .selectreactor import SelectReactor as Reactor
 else:
     raise NotImplementedError

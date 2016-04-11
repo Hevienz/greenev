@@ -1,5 +1,10 @@
+import server
+from coroutine import coroutine
 import greenlet
-from greenev import coroutine, server
+import logging
+
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 @coroutine
@@ -11,7 +16,7 @@ def handler(C):
         except server.NoDataException as e:
             pass
         else:
-            print("MSG from %s: %s" % (C.addr, data))
+            print("MSG:", data)
             C.write(b"REPLAY: " + data)
         g.parent.switch()
 

@@ -39,7 +39,7 @@ class KqueueReactor(AbstractReactor):
                 results[fd] |= self.EV_IN
             elif e.filter == select.KQ_FILTER_WRITE:
                 results[fd] |= self.EV_OUT
-        return results.iteritems()
+        return results.items()
 
     def register(self, fd, mode):
         self._fds[fd] = mode
