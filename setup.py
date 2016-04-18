@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name = 'greenev',
-    version = '1.0.0rc1',
+    version = '1.0.0rc2',
     packages = ['greenev', 'greenev.reactor'],
     url = 'https://github.com/Hevienz/greenev',
     license = 'Apache License Version 2.0',
