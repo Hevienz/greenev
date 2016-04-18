@@ -10,6 +10,7 @@ except ImportError:
     import Queue as queue
 from .event import BaseEventLoop
 
+
 if not hasattr(__builtins__, "BlockingIOError"):
     BlockingIOError = socket.error
 
@@ -22,6 +23,9 @@ class NoDataException(Exception):
 
 
 class Client(object):
+    _canRead = False
+    _needWrite = False
+
     def __init__(self, sock, addr):
         self._recv_queue = queue.Queue()
         self._send_queue = queue.Queue()
@@ -62,12 +66,15 @@ class Client(object):
         except Exception as e:
             logging.exception(e)
 
-        try:
-            self._recv_queue.put_nowait(data)
-        except queue.Full as e:
-            logging.exception(e)
-        except Exception as e:
-            logging.exception(e)
+        if data:
+            try:
+                self._recv_queue.put_nowait(data)
+            except queue.Full as e:
+                logging.exception(e)
+            except Exception as e:
+                logging.exception(e)
+            else:
+                self._canRead = True
 
         return closed
 
@@ -77,7 +84,7 @@ class Client(object):
                 data = self._send_queue.get_nowait()
                 self._sendall(data)
         except queue.Empty as e:
-            pass
+            self._needWrite = False
         except Exception as e:
             logging.exception(e)
             return True
@@ -88,15 +95,20 @@ class Client(object):
         try:
             return self._recv_queue.get_nowait()
         except queue.Empty as e:
+            self._canRead = False
             raise NoDataException
 
     def write(self, data):
         try:
-            return self._send_queue.put_nowait(data)
+            ret = self._send_queue.put_nowait(data)
         except queue.Full as e:
             logging.exception(e)
         except Exception as e:
             logging.exception(e)
+        else:
+            self._needWrite = True
+
+        return ret
 
     def close(self):
         return self.sock.close()
@@ -132,10 +144,11 @@ class StreamServer(BaseEventLoop):
     def _sched_coroutine(self):
         for (fileno, coro) in self._task_mapping.items():
             C = self._filenoToClient(fileno)
-            coro.switch(C)
+            if C._canRead or C._needWrite:
+                coro.switch(C)
 
-            if coro.dead:
-                self._clear_Client(C)
+                if coro.dead:
+                    self._clear_Client(C)
 
     def run_forever(self):
         self.register(self._lisenerfd, self.EV_IN)
