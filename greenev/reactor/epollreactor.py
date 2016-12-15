@@ -1,3 +1,4 @@
+#coding=utf-8
 __all__ = ["EpollReactor"]
 
 
@@ -5,6 +6,7 @@ from .abstractreactor import AbstractReactor
 from select import epoll, EPOLLHUP, EPOLLERR, EPOLLIN, EPOLLOUT, EPOLLET
 
 
+# 基于epoll的Reactor的具体实现
 class EpollReactor(AbstractReactor):
     EV_DISCONNECTED = (EPOLLHUP | EPOLLERR)
     EV_IN = EPOLLIN | EPOLLET

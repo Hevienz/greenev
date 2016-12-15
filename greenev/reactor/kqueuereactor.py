@@ -1,3 +1,4 @@
+#coding=utf-8
 __all__ = ["KqueueReactor"]
 
 
@@ -9,6 +10,7 @@ from collections import defaultdict
 MAX_EVENTS = 1024
 
 
+# 基于kqueue的Reactor的具体实现
 class KqueueReactor(AbstractReactor):
     EV_NULL = 0x00
     EV_DISCONNECTED = 0x18

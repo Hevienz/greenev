@@ -5,6 +5,7 @@ from .abstractreactor import AbstractReactor
 from select import poll, POLLHUP, POLLERR, POLLIN, POLLOUT
 
 
+# 基于poll的Reactor的具体实现
 class PollReactor(AbstractReactor):
     EV_DISCONNECTED = (POLLHUP | POLLERR)
     EV_IN = POLLIN

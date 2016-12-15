@@ -6,6 +6,7 @@ from select import select
 from collections import defaultdict
 
 
+# 基于select的Reactor的具体实现
 class SelectReactor(AbstractReactor):
     EV_NULL = 0x00
     EV_DISCONNECTED = 0x18
